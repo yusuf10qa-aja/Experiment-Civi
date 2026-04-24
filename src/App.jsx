@@ -5,6 +5,7 @@ function App() {
   const [cvText, setCvText] = useState('')
   const [result, setResult] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  const [isDownloading, setIsDownloading] = useState(false) // State baru untuk loading PDF
 
   const handleGenerate = async () => {
     if (!jobDesc || !cvText) {
@@ -24,7 +25,9 @@ function App() {
 
       const data = await response.json()
       if (data.result) {
-        setResult(data.result)
+        // Membersihkan simbol bintang (**) dari Markdown AI agar lebih rapi
+        const cleanText = data.result.replace(/\*\*/g, '');
+        setResult(cleanText)
       } else {
         throw new Error(data.error || "Gagal membuat CV")
       }
@@ -35,50 +38,62 @@ function App() {
     }
   }
 
-  // Fungsi sakti untuk download PDF
+  // Fungsi PDF yang sudah diperbaiki
   const downloadPDF = () => {
     const element = document.getElementById('cv-preview');
+    
+    if (!window.html2pdf) {
+      alert("Library PDF belum termuat. Pastikan ada koneksi internet dan refresh halaman.");
+      return;
+    }
+
+    setIsDownloading(true);
+
     const opt = {
-      margin:       1,
-      filename:     'CV_ATS_Generated.pdf',
+      margin:       0.7,
+      filename:     'CV_ATS_Saya.pdf',
       image:        { type: 'jpeg', quality: 0.98 },
-      html2canvas:  { scale: 2 },
-      jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
+      html2canvas:  { scale: 2, useCORS: true }, // useCORS bantu mencegah error render
+      jsPDF:        { unit: 'in', format: 'a4', orientation: 'portrait' }
     };
     
-    // Memanggil library html2pdf yang kita panggil di index.html nanti
-    if (window.html2pdf) {
-      window.html2pdf().set(opt).from(element).save();
-    } else {
-      alert("Library PDF belum siap, tunggu sebentar atau refresh.");
-    }
+    // Proses download dengan notifikasi
+    window.html2pdf().from(element).set(opt).save()
+      .then(() => {
+        setIsDownloading(false);
+      })
+      .catch(err => {
+        console.error(err);
+        alert("Gagal membuat PDF. Coba gunakan browser Chrome.");
+        setIsDownloading(false);
+      });
   }
 
   return (
-    <div className="min-h-screen bg-gray-100 py-10 px-4">
+    <div className="min-h-screen bg-slate-100 py-10 px-4">
       <div className="max-w-6xl mx-auto">
         <header className="text-center mb-10">
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">📄 ATS CV Generator</h1>
-          <p className="text-gray-600">Buat CV standar industri yang lolos filter sistem ATS</p>
+          <h1 className="text-4xl font-extrabold text-slate-800 mb-2">📄 ATS CV Generator</h1>
+          <p className="text-slate-600">Bantu kamu tingkatkan peluang lolos kerja </p>
         </header>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Form Input */}
-          <div className="space-y-6 bg-white p-6 rounded-xl shadow-md">
+          <div className="space-y-6 bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
             <div>
-              <label className="block text-sm font-bold text-gray-700 mb-2">INFO LOWONGAN</label>
+              <label className="block text-sm font-bold text-slate-700 mb-2">TARGET LOWONGAN</label>
               <textarea 
-                className="w-full p-3 border rounded-lg h-32 bg-gray-50 focus:ring-2 focus:ring-blue-500"
+                className="w-full p-4 border border-slate-200 rounded-xl h-32 bg-slate-50 focus:ring-2 focus:ring-blue-500 outline-none transition-all"
                 placeholder="Paste deskripsi kerja di sini..."
                 value={jobDesc}
                 onChange={(e) => setJobDesc(e.target.value)}
               />
             </div>
             <div>
-              <label className="block text-sm font-bold text-gray-700 mb-2">DATA DIRI & PENGALAMAN</label>
+              <label className="block text-sm font-bold text-slate-700 mb-2">DATA DIRI & PENGALAMAN</label>
               <textarea 
-                className="w-full p-3 border rounded-lg h-64 bg-gray-50 focus:ring-2 focus:ring-blue-500"
-                placeholder="Tulis pengalaman, skill, dan pendidikan kamu..."
+                className="w-full p-4 border border-slate-200 rounded-xl h-64 bg-slate-50 focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+                placeholder="Tulis nama, kontak, pengalaman, skill, dan pendidikan kamu..."
                 value={cvText}
                 onChange={(e) => setCvText(e.target.value)}
               />
@@ -86,24 +101,27 @@ function App() {
             <button 
               onClick={handleGenerate}
               disabled={isLoading}
-              className={`w-full py-4 rounded-lg font-bold text-white transition ${
-                isLoading ? 'bg-gray-400' : 'bg-blue-600 hover:bg-blue-700'
+              className={`w-full py-4 rounded-xl font-bold text-white transition-all active:scale-95 ${
+                isLoading ? 'bg-slate-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700 shadow-md'
               }`}
             >
-              {isLoading ? '🤖 AI Sedang Menulis...' : '✨ Generate CV ATS'}
+              {isLoading ? '🤖 AI Sedang Mempersiapkan CV-mu...' : '✨ Generate CV ATS'}
             </button>
           </div>
 
           {/* Preview & Download */}
           <div className="flex flex-col">
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold">Preview CV</h2>
+              <h2 className="text-xl font-bold text-slate-800">Preview CV</h2>
               {result && (
                 <button 
                   onClick={downloadPDF}
-                  className="bg-green-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-green-700 flex items-center gap-2"
+                  disabled={isDownloading}
+                  className={`px-5 py-2.5 rounded-xl font-semibold text-white flex items-center gap-2 transition-all active:scale-95 ${
+                    isDownloading ? 'bg-emerald-400 cursor-not-allowed' : 'bg-emerald-600 hover:bg-emerald-700 shadow-md'
+                  }`}
                 >
-                  📥 Download PDF
+                  {isDownloading ? '⏳ Memproses PDF...' : '📥 Download PDF'}
                 </button>
               )}
             </div>
@@ -111,9 +129,9 @@ function App() {
             {/* Area CV yang akan diubah jadi PDF */}
             <div 
               id="cv-preview" 
-              className="bg-white p-10 shadow-lg border border-gray-200 min-h-[600px] text-gray-800 leading-relaxed font-sans text-sm whitespace-pre-wrap"
+              className="bg-white p-12 shadow-md border border-slate-200 min-h-[700px] text-slate-800 leading-loose font-sans text-[15px] whitespace-pre-wrap"
             >
-              {result ? result : <p className="text-gray-400 italic text-center mt-20">Hasil CV akan muncul di sini...</p>}
+              {result ? result : <p className="text-slate-400 italic text-center mt-32">Hasil CV akan muncul di sini...</p>}
             </div>
           </div>
         </div>
@@ -122,4 +140,4 @@ function App() {
   )
 }
 
-export default App
+export default App;
