@@ -1,7 +1,5 @@
 export const handler = async (event) => {
-  if (event.httpMethod !== "POST") {
-    return { statusCode: 405, body: "Method Not Allowed" };
-  }
+  if (event.httpMethod !== "POST") return { statusCode: 405, body: "Method Not Allowed" };
 
   try {
     const { jobDesc, cvText } = JSON.parse(event.body);
@@ -15,9 +13,25 @@ export const handler = async (event) => {
       body: JSON.stringify({
         model: "llama3.1-8b",
         messages: [
-          { role: "system", content: "Kamu pakar HR Profesional. Buat cover letter Indonesia." },
-          { role: "user", content: `Job: ${jobDesc}\nCV: ${cvText}` }
-        ]
+          { 
+            role: "system", 
+            content: `Kamu adalah pakar HR dan ATS (Applicant Tracking System). 
+            Buatkan Curriculum Vitae (CV) yang ATS-Friendly dalam Bahasa Indonesia. 
+            Format harus bersih menggunakan Markdown: 
+            - Nama Lengkap (Paling Atas, Bold)
+            - Kontak (Email, LinkedIn, Lokasi)
+            - Ringkasan Profesional (3-4 baris)
+            - Pengalaman Kerja (Urutan waktu terbalik, gunakan bullet points untuk pencapaian)
+            - Pendidikan
+            - Skill Utama (relevan dengan Job Description)
+            Jangan berikan teks pembuka AI, langsung berikan isi CV-nya saja.` 
+          },
+          { 
+            role: "user", 
+            content: `TARGET LOWONGAN:\n${jobDesc}\n\nDATA DIRI/PENGALAMAN SAYA:\n${cvText}` 
+          }
+        ],
+        temperature: 0.5 // Lebih rendah agar formatnya lebih konsisten/kaku
       })
     });
 

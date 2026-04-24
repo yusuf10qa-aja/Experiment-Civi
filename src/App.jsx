@@ -7,9 +7,8 @@ function App() {
   const [isLoading, setIsLoading] = useState(false)
 
   const handleGenerate = async () => {
-    // 1. Validasi Input
     if (!jobDesc || !cvText) {
-      alert("Waduh, tolong isi Job Description dan CV/Pengalaman kamu dulu ya!")
+      alert("Isi data lowongan dan pengalaman dulu ya!")
       return
     }
 
@@ -17,146 +16,110 @@ function App() {
     setResult('')
 
     try {
-      // 2. Memanggil Backend Netlify Function (generate.mjs)
-      // Jalur ini akan bekerja jika kamu menjalankan: netlify dev
       const response = await fetch("/.netlify/functions/generate", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ jobDesc, cvText }),
       })
 
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || "Gagal memanggil AI")
-      }
-
       const data = await response.json()
-      
-      // 3. Menampilkan hasil
       if (data.result) {
         setResult(data.result)
       } else {
-        setResult("AI tidak memberikan respon. Coba ulangi lagi.")
+        throw new Error(data.error || "Gagal membuat CV")
       }
-
     } catch (error) {
-      console.error("Error detail:", error)
-      setResult("Yah, ada error nih: " + error.message + ". Pastikan kamu menjalankan server dengan perintah 'netlify dev' dan bukan 'npm run dev'.")
+      alert("Error: " + error.message)
     } finally {
       setIsLoading(false)
     }
   }
 
-  const copyToClipboard = () => {
-    navigator.clipboard.writeText(result)
-    alert("Cover Letter berhasil disalin!")
+  // Fungsi sakti untuk download PDF
+  const downloadPDF = () => {
+    const element = document.getElementById('cv-preview');
+    const opt = {
+      margin:       1,
+      filename:     'CV_ATS_Generated.pdf',
+      image:        { type: 'jpeg', quality: 0.98 },
+      html2canvas:  { scale: 2 },
+      jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
+    };
+    
+    // Memanggil library html2pdf yang kita panggil di index.html nanti
+    if (window.html2pdf) {
+      window.html2pdf().set(opt).from(element).save();
+    } else {
+      alert("Library PDF belum siap, tunggu sebentar atau refresh.");
+    }
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 py-12 px-4 sm:px-6">
-      <div className="max-w-5xl mx-auto">
-        
-        {/* Header Section */}
-        <div className="text-center mb-12">
-          <h1 className="text-5xl font-extrabold text-slate-900 mb-4 tracking-tight">
-            🚀 AI <span className="text-blue-600">Cover Letter</span>
-          </h1>
-          <p className="text-lg text-slate-600 max-w-2xl mx-auto">
-            Gak usah pusing mikirin kata-kata. Masukkan info lowongan, 
-            biar Llama-3 yang rakit surat lamaranmu dalam hitungan detik.
-          </p>
-        </div>
+    <div className="min-h-screen bg-gray-100 py-10 px-4">
+      <div className="max-w-6xl mx-auto">
+        <header className="text-center mb-10">
+          <h1 className="text-4xl font-bold text-gray-900 mb-2">📄 ATS CV Generator</h1>
+          <p className="text-gray-600">Buat CV standar industri yang lolos filter sistem ATS</p>
+        </header>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          
-          {/* Kolom Kiri: Form Input */}
-          <div className="space-y-6 bg-white p-8 rounded-2xl shadow-xl border border-slate-100">
+          {/* Form Input */}
+          <div className="space-y-6 bg-white p-6 rounded-xl shadow-md">
             <div>
-              <label className="block text-sm font-bold text-slate-700 mb-2 uppercase tracking-wider">
-                🎯 Deskripsi Pekerjaan
-              </label>
+              <label className="block text-sm font-bold text-gray-700 mb-2">INFO LOWONGAN</label>
               <textarea 
-                className="w-full p-4 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500 outline-none transition-all resize-none bg-slate-50"
-                rows="5"
-                placeholder="Paste syarat & tanggung jawab pekerjaan di sini..."
+                className="w-full p-3 border rounded-lg h-32 bg-gray-50 focus:ring-2 focus:ring-blue-500"
+                placeholder="Paste deskripsi kerja di sini..."
                 value={jobDesc}
                 onChange={(e) => setJobDesc(e.target.value)}
-              ></textarea>
+              />
             </div>
-
             <div>
-              <label className="block text-sm font-bold text-slate-700 mb-2 uppercase tracking-wider">
-                👤 Pengalaman / Skill Kamu
-              </label>
+              <label className="block text-sm font-bold text-gray-700 mb-2">DATA DIRI & PENGALAMAN</label>
               <textarea 
-                className="w-full p-4 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500 outline-none transition-all resize-none bg-slate-50"
-                rows="8"
-                placeholder="Paste ringkasan CV atau pengalaman kerjamu di sini..."
+                className="w-full p-3 border rounded-lg h-64 bg-gray-50 focus:ring-2 focus:ring-blue-500"
+                placeholder="Tulis pengalaman, skill, dan pendidikan kamu..."
                 value={cvText}
                 onChange={(e) => setCvText(e.target.value)}
-              ></textarea>
+              />
             </div>
-
             <button 
               onClick={handleGenerate}
               disabled={isLoading}
-              className={`w-full py-4 rounded-xl font-bold text-white text-lg shadow-lg transform transition-all active:scale-95 ${
-                isLoading 
-                ? 'bg-slate-400 cursor-not-allowed' 
-                : 'bg-blue-600 hover:bg-blue-700 hover:shadow-blue-200'
+              className={`w-full py-4 rounded-lg font-bold text-white transition ${
+                isLoading ? 'bg-gray-400' : 'bg-blue-600 hover:bg-blue-700'
               }`}
             >
-              {isLoading ? (
-                <span className="flex items-center justify-center">
-                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  Sedang Merakit Surat...
-                </span>
-              ) : '✨ Generate Surat Lamaran'}
+              {isLoading ? '🤖 AI Sedang Menulis...' : '✨ Generate CV ATS'}
             </button>
           </div>
 
-          {/* Kolom Kanan: Output AI */}
-          <div className="flex flex-col h-full bg-white p-8 rounded-2xl shadow-xl border border-slate-100">
+          {/* Preview & Download */}
+          <div className="flex flex-col">
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold text-slate-800 uppercase tracking-wider">📝 Hasil Surat</h2>
+              <h2 className="text-xl font-bold">Preview CV</h2>
               {result && (
                 <button 
-                  onClick={copyToClipboard}
-                  className="text-sm font-semibold text-blue-600 hover:text-blue-800 transition-colors"
+                  onClick={downloadPDF}
+                  className="bg-green-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-green-700 flex items-center gap-2"
                 >
-                  Salin Teks
+                  📥 Download PDF
                 </button>
               )}
             </div>
             
-            <div className="flex-grow p-6 bg-slate-50 border border-slate-200 rounded-xl overflow-y-auto whitespace-pre-wrap text-slate-700 leading-relaxed font-serif italic shadow-inner min-h-[400px]">
-              {result ? result : (
-                <div className="h-full flex flex-col items-center justify-center text-slate-400">
-                  <svg className="w-16 h-16 mb-4 opacity-20" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10l4 4v10a2 2 0 01-2 2z"></path>
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 2v4a2 2 0 002 2h4"></path>
-                  </svg>
-                  <p>Isi data di sebelah kiri dulu, lalu klik tombol.</p>
-                </div>
-              )}
+            {/* Area CV yang akan diubah jadi PDF */}
+            <div 
+              id="cv-preview" 
+              className="bg-white p-10 shadow-lg border border-gray-200 min-h-[600px] text-gray-800 leading-relaxed font-sans text-sm whitespace-pre-wrap"
+            >
+              {result ? result : <p className="text-gray-400 italic text-center mt-20">Hasil CV akan muncul di sini...</p>}
             </div>
           </div>
-
         </div>
-
-        {/* Footer */}
-        <footer className="mt-12 text-center text-slate-400 text-sm">
-          Built with ⚡ Speed by Cerebras Llama-3 • Vibe Coding Edition
-        </footer>
-
       </div>
     </div>
   )
-};
+}
 
-export default App;
+export default App
