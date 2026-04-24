@@ -1,7 +1,7 @@
 import { useState } from 'react'
 
 function App() {
-  // State Input Lengkap
+  // State Input Lengkap (DIKUNCI)
   const [nama, setNama] = useState('')
   const [lokasi, setLokasi] = useState('')
   const [email, setEmail] = useState('')
@@ -50,7 +50,7 @@ function App() {
     }
   }
 
-  // REGEX PARSER: Mengubah Markdown AI jadi Layout Persis PDF asli
+  // REGEX PARSER (DIKUNCI)
   const formatCV = (text) => {
     if (!text) return { __html: '' };
     
@@ -69,8 +69,8 @@ function App() {
     return { __html: formatted };
   }
 
-  // Fungsi PDF yang DIBERKATI (Stabil)
-  const downloadPDF = async () => {
+  // FUNGSI PDF SUPER STABIL (DIPERBAIKI)
+  const downloadPDF = () => {
     const element = document.getElementById('cv-preview');
     
     if (!window.html2pdf) {
@@ -80,29 +80,35 @@ function App() {
 
     setIsDownloading(true);
 
-    // Filter nama file agar tidak ada karakter aneh yang bikin error
+    // Filter nama file agar aman
     const safeName = nama ? nama.replace(/[^a-zA-Z0-9]/g, '_') : 'Generated';
 
     const opt = {
-      margin:       0.5, // Kembali ke format margin standar yang aman
+      margin:       0.5,
       filename:     `CV_ATS_${safeName}.pdf`,
       image:        { type: 'jpeg', quality: 0.98 },
-      html2canvas:  { scale: 2, useCORS: true },
+      // scrollY: 0 adalah kunci untuk memperbaiki error saat pengguna men-scroll web ke bawah
+      html2canvas:  { scale: 2, useCORS: true, scrollY: 0 }, 
       jsPDF:        { unit: 'in', format: 'a4', orientation: 'portrait' }
     };
     
-    try {
-      await window.html2pdf().set(opt).from(element).save();
-    } catch (err) {
-      console.error(err);
-      alert("Gagal memproses PDF.");
-    } finally {
-      setIsDownloading(false);
-    }
+    // Menggunakan format Promise klasik (tanpa await) yang lebih disukai oleh html2pdf
+    window.html2pdf()
+      .set(opt)
+      .from(element)
+      .save()
+      .then(() => {
+        setIsDownloading(false);
+      })
+      .catch((err) => {
+        console.error("Detail Error PDF:", err);
+        alert("Gagal memproses PDF.");
+        setIsDownloading(false);
+      });
   }
 
   return (
-    // Mempertahankan UI Gradient Glassmorphism yang konsisten
+    // UI GLASSMORPHISM & GRADIENT (DIKUNCI)
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-blue-100 py-12 px-4 sm:px-6 font-sans text-slate-800">
       <div className="max-w-[1400px] mx-auto">
         
@@ -120,7 +126,7 @@ function App() {
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           
-          {/* KOLOM KIRI: Form Input Glassmorphism */}
+          {/* KOLOM KIRI */}
           <div className="lg:col-span-5 bg-white/70 backdrop-blur-xl p-6 rounded-3xl shadow-xl border border-white/50 sticky top-6 overflow-y-auto max-h-[85vh] custom-scrollbar">
             
             <div className="space-y-5">
@@ -169,7 +175,7 @@ function App() {
             </div>
           </div>
 
-          {/* KOLOM KANAN: Preview A4 */}
+          {/* KOLOM KANAN */}
           <div className="lg:col-span-7 flex flex-col">
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-2xl font-extrabold text-slate-800 flex items-center gap-2">📄 Preview CV</h2>
@@ -188,12 +194,11 @@ function App() {
               )}
             </div>
             
-            {/* Kertas Render PDF */}
             <div className="bg-white p-2 rounded-2xl shadow-2xl border border-slate-200">
               <div 
                 id="cv-preview" 
                 className="bg-white px-10 py-12 min-h-[800px] text-black"
-                style={{ fontFamily: "'Times New Roman', Times, serif" }} // Font klasik resume
+                style={{ fontFamily: "'Times New Roman', Times, serif" }}
               >
                 {result ? (
                   <div dangerouslySetInnerHTML={formatCV(result)} />
@@ -208,7 +213,7 @@ function App() {
 
         </div>
 
-        {/* Footer Konsisten */}
+        {/* Footer (DIKUNCI) */}
         <footer className="mt-16 pb-8 text-center text-slate-500 font-medium">
           <p>
             Dibuat dengan 🔥 dan <span className="text-pink-500">❤️</span>. <br className="sm:hidden" />
