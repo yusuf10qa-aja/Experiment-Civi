@@ -17,7 +17,6 @@ function App() {
   
   const [result, setResult] = useState('')
   const [isLoading, setIsLoading] = useState(false)
-  const [isDownloading, setIsDownloading] = useState(false)
 
   const handleGenerate = async () => {
     if (!jobReq || !workExp || !nama) {
@@ -69,50 +68,19 @@ function App() {
     return { __html: formatted };
   }
 
-  // FUNGSI PDF SUPER STABIL (DIPERBAIKI)
+  // FUNGSI PDF NATIVE (100% Anti-Gagal & Teks bisa diblok untuk ATS)
   const downloadPDF = () => {
-    const element = document.getElementById('cv-preview');
-    
-    if (!window.html2pdf) {
-      alert("Library PDF belum siap. Tunggu beberapa detik.");
-      return;
-    }
-
-    setIsDownloading(true);
-
-    // Filter nama file agar aman
-    const safeName = nama ? nama.replace(/[^a-zA-Z0-9]/g, '_') : 'Generated';
-
-    const opt = {
-      margin:       0.5,
-      filename:     `CV_ATS_${safeName}.pdf`,
-      image:        { type: 'jpeg', quality: 0.98 },
-      // scrollY: 0 adalah kunci untuk memperbaiki error saat pengguna men-scroll web ke bawah
-      html2canvas:  { scale: 2, useCORS: true, scrollY: 0 }, 
-      jsPDF:        { unit: 'in', format: 'a4', orientation: 'portrait' }
-    };
-    
-    // Menggunakan format Promise klasik (tanpa await) yang lebih disukai oleh html2pdf
-    window.html2pdf()
-      .set(opt)
-      .from(element)
-      .save()
-      .then(() => {
-        setIsDownloading(false);
-      })
-      .catch((err) => {
-        console.error("Detail Error PDF:", err);
-        alert("Gagal memproses PDF.");
-        setIsDownloading(false);
-      });
+    window.print();
   }
 
   return (
     // UI GLASSMORPHISM & GRADIENT (DIKUNCI)
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-blue-100 py-12 px-4 sm:px-6 font-sans text-slate-800">
-      <div className="max-w-[1400px] mx-auto">
+    // Penambahan class "print:..." mengatur agar background, tombol, dan form menghilang saat dicetak ke PDF
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-blue-100 py-12 px-4 sm:px-6 font-sans text-slate-800 print:bg-white print:bg-none print:py-0 print:px-0">
+      <div className="max-w-[1400px] mx-auto print:max-w-none print:w-full">
         
-        <header className="text-center mb-12">
+        {/* Header - Dihilangkan saat print */}
+        <header className="text-center mb-12 print:hidden">
           <h1 className="text-5xl font-extrabold tracking-tight mb-4">
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600">
               Pro ATS CV Generator
@@ -124,13 +92,12 @@ function App() {
           </p>
         </header>
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start print:block">
           
-          {/* KOLOM KIRI */}
-          <div className="lg:col-span-5 bg-white/70 backdrop-blur-xl p-6 rounded-3xl shadow-xl border border-white/50 sticky top-6 overflow-y-auto max-h-[85vh] custom-scrollbar">
+          {/* KOLOM KIRI - Dihilangkan total saat print */}
+          <div className="lg:col-span-5 bg-white/70 backdrop-blur-xl p-6 rounded-3xl shadow-xl border border-white/50 sticky top-6 overflow-y-auto max-h-[85vh] custom-scrollbar print:hidden">
             
             <div className="space-y-5">
-              {/* Personal Info */}
               <div className="space-y-3">
                 <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider border-b border-slate-200 pb-1">Data Pribadi</h3>
                 <div className="grid grid-cols-2 gap-3">
@@ -142,7 +109,6 @@ function App() {
                 </div>
               </div>
 
-              {/* Experience */}
               <div className="space-y-3">
                 <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider border-b border-slate-200 pb-1">Pengalaman & Target</h3>
                 <textarea className="w-full p-3 border-2 border-slate-200 rounded-xl h-20 text-sm bg-white/80 outline-none focus:ring-2 focus:ring-purple-500 resize-none" placeholder="Job Requirement (Kriteria Lowongan)" value={jobReq} onChange={e => setJobReq(e.target.value)} />
@@ -150,7 +116,6 @@ function App() {
                 <textarea className="w-full p-3 border-2 border-slate-200 rounded-xl h-16 text-sm bg-white/80 outline-none focus:ring-2 focus:ring-purple-500 resize-none" placeholder="Pendidikan Terakhir" value={pendidikan} onChange={e => setPendidikan(e.target.value)} />
               </div>
 
-              {/* Skills */}
               <div className="space-y-3">
                 <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider border-b border-slate-200 pb-1">Skills & Projects</h3>
                 <input type="text" placeholder="Technical Skills" className="w-full p-3 border-2 border-slate-200 rounded-xl text-sm bg-white/80 outline-none focus:ring-2 focus:ring-purple-500" value={techSkills} onChange={e => setTechSkills(e.target.value)} />
@@ -175,35 +140,31 @@ function App() {
             </div>
           </div>
 
-          {/* KOLOM KANAN */}
-          <div className="lg:col-span-7 flex flex-col">
-            <div className="flex justify-between items-center mb-6">
+          {/* KOLOM KANAN - Hanya ini yang dicetak ke PDF */}
+          <div className="lg:col-span-7 flex flex-col print:block print:w-full">
+            <div className="flex justify-between items-center mb-6 print:hidden">
               <h2 className="text-2xl font-extrabold text-slate-800 flex items-center gap-2">📄 Preview CV</h2>
               {result && (
                 <button 
                   onClick={downloadPDF}
-                  disabled={isDownloading}
-                  className={`px-6 py-2.5 rounded-xl font-bold text-white flex items-center gap-2 transition-all duration-300 active:scale-95 ${
-                    isDownloading 
-                    ? 'bg-emerald-400 cursor-not-allowed' 
-                    : 'bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 shadow-lg hover:-translate-y-1'
-                  }`}
+                  className="bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 px-6 py-2.5 rounded-xl font-bold text-white flex items-center gap-2 transition-all duration-300 active:scale-95 shadow-lg hover:-translate-y-1"
                 >
-                  {isDownloading ? '⏳ Mengekspor PDF...' : '📥 Download PDF'}
+                  🖨️ Simpan ke PDF
                 </button>
               )}
             </div>
             
-            <div className="bg-white p-2 rounded-2xl shadow-2xl border border-slate-200">
+            {/* Kertas Render PDF */}
+            <div className="bg-white p-2 rounded-2xl shadow-2xl border border-slate-200 print:shadow-none print:border-none print:p-0 print:m-0">
               <div 
                 id="cv-preview" 
-                className="bg-white px-10 py-12 min-h-[800px] text-black"
+                className="bg-white px-10 py-12 min-h-[800px] text-black print:min-h-0 print:px-0 print:py-0"
                 style={{ fontFamily: "'Times New Roman', Times, serif" }}
               >
                 {result ? (
                   <div dangerouslySetInnerHTML={formatCV(result)} />
                 ) : (
-                  <div className="flex flex-col items-center justify-center h-[500px] text-slate-400 opacity-60 font-sans">
+                  <div className="flex flex-col items-center justify-center h-[500px] text-slate-400 opacity-60 font-sans print:hidden">
                     <p className="font-medium text-lg">Lembar CV masih kosong.</p>
                   </div>
                 )}
@@ -213,8 +174,8 @@ function App() {
 
         </div>
 
-        {/* Footer (DIKUNCI) */}
-        <footer className="mt-16 pb-8 text-center text-slate-500 font-medium">
+        {/* Footer (DIKUNCI) - Dihilangkan saat print */}
+        <footer className="mt-16 pb-8 text-center text-slate-500 font-medium print:hidden">
           <p>
             Dibuat dengan 🔥 dan <span className="text-pink-500">❤️</span>. <br className="sm:hidden" />
             Support by <span className="font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600 text-lg ml-1">muyAI</span>
